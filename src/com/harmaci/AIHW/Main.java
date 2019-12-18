@@ -1,6 +1,6 @@
 package com.harmaci.AIHW;
 
-import com.harmaci.AIHW.comparators.UserIDComparator;
+import com.harmaci.AIHW.comparator.UserIDComparator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class Main {
 	private static final double NEIGHBOR_SELECT_PROPORTION = 1 / (double) 5;	// TODO Try this as (double) 1 / 5
@@ -25,6 +27,7 @@ public class Main {
 		ArrayList<Review> reviews = new ArrayList<>();
 		double[][] similarityMx;
 		
+		// Reading input
 		try {
 			// Reading metadata
 			String[] firstLine = br.readLine().split("\t");
@@ -56,10 +59,10 @@ public class Main {
 		users = initUsers(userNum, audioBookNum, reviews);
 		users.sort(new UserIDComparator());
 		
-		// Print user data
-		// TODO Remove printing from final version BUT leave normalization !
+		// Normalization
 		for (User user : users) {
 			user.normalizeReviews();
+			// TODO Remove printing from final version BUT leave normalization !
 			System.out.println(user.toString());
 		}
 		
@@ -67,7 +70,20 @@ public class Main {
 		similarityMx = calcSimilarityMx(users, userNum);
 		
 		// Make predictions and recommendations
-		makePredictions(users, similarityMx, audioBookNum);
+		ArrayList<int[]> recommendations = new ArrayList<>();
+		recommendations = makeRecommendations(users, similarityMx, audioBookNum);
+		
+		// Print recommendations
+		for (int[] recIDs : recommendations) {
+			StringBuilder line = new StringBuilder();
+			int i;
+			for (i = 0; i < recIDs.length - 1; i++) {
+				line.append(recIDs[i]).append("\t");
+			}
+			line.append(recIDs[i]);
+			
+			System.out.println(line);
+		}
 	}
 	
 	private static ArrayList<User> initUsers(int userCnt, int audioBookCnt, ArrayList<Review> reviews) {
@@ -120,22 +136,49 @@ public class Main {
 		return numerator / denominator;
 	}
 	
-	private static void makePredictions(ArrayList<User> users, double[][] similarityMx, int audioBookNum) {
+	private static ArrayList<int[]> makeRecommendations(ArrayList<User> users, double[][] similarityMx, int audioBookNum) {
 		ArrayList<double[]> allPredictions = new ArrayList<>();
+		ArrayList<int[]> allRecommendations = new ArrayList<>();
 		
 		// Make predictions for every user
 		for (User user : users) {
 			allPredictions.add(makePredictionForUser(user, users, similarityMx, audioBookNum));
 		}
 		
-		for (double[] dArray : allPredictions) {
+		for (double[] predictions : allPredictions) {
+			// Print predictions
+			// TODO - Remove from final
 			String out = "";
-			for (double dOut : dArray) {
-				out += dOut + " ";
+			for (double dOut : predictions) {
+				out += dOut + "\t\t";
 			}
 			System.out.println(out);
+			
+			allRecommendations.add(getTop10Recommendation(predictions));
+		}
+		return allRecommendations;
+	}
+	
+	private static int[] getTop10Recommendation(double[] predictions) {
+		int[] recommendations = new int[10];
+		
+		ArrayList<Double> tmpPredictions = new ArrayList<>();
+		for (int i = 0; i < predictions.length; i++) {
+			tmpPredictions.add(predictions[i]);
 		}
 		
+		for (int i = 0; i < 10; i++) {
+			try {
+				recommendations[i] = tmpPredictions.indexOf(Collections.max(tmpPredictions));
+				tmpPredictions.remove(recommendations[i]);
+				recommendations[i] += i;
+			}
+			catch (NoSuchElementException e) {
+				recommendations[i] = -1;
+			}
+		}
+		
+		return recommendations;
 	}
 	
 	private static double[] makePredictionForUser(User user, ArrayList<User> users, double[][] similarityMx, int audioBookNum) {
@@ -171,10 +214,17 @@ public class Main {
 			// Remove neighbor if not similar enough
 			int k = 0;
 			for (int j = neighborhoodCardinality; j < simOrderedNHoodIndex.size(); j++) {
-				for (User u : neighborhood) {
+				Iterator<User> iter = neighborhood.iterator();
+				while (iter.hasNext()) {
+					User u = iter.next();
+					if (u.getUserID() == (simOrderedNHoodIndex.get(j) - k++) ) // k is to fix shortening of neighborhood
+						iter.remove();
+				}
+				// TODO - remove comment below from final
+				/*for (User u : neighborhood) {
 					if (u.getUserID() == (simOrderedNHoodIndex.get(j) - k++) ) // k is to fix shortening of neighborhood
 						neighborhood.remove(u);
-				}
+				}*/
 			}
 			
 			// Default rating prediction

@@ -1,4 +1,4 @@
-package com.harmaci.AIHW.comparators;
+package com.harmaci.AIHW.comparator;
 
 import com.harmaci.AIHW.User;
 
