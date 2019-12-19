@@ -63,7 +63,7 @@ public class Main {
 		for (User user : users) {
 			user.normalizeReviews();
 			// TODO Remove printing from final version BUT leave normalization !
-			System.out.println(user.toString());
+			//System.out.println(user.toString());
 		}
 		
 		// Calculate similarities
@@ -104,10 +104,10 @@ public class Main {
 		double[][] similarityMx = new double[userNum][userNum];
 		
 		for (int i = 0; i < userNum; i++) {
-			System.out.println("User " + users.get(i).getUserID() + " similar to user:");
+			//System.out.println("User " + users.get(i).getUserID() + " similar to user:");
 			for (int j = 0; j < userNum; j++) {
 				similarityMx[i][j] = centeredCosine(users.get(i), users.get(j));
-				System.out.println(users.get(j).getUserID() + " > " + similarityMx[i][j] + "\t");
+				//System.out.println(users.get(j).getUserID() + " > " + similarityMx[i][j] + "\t");
 			}
 		}
 		// TODO Remove printing similarity matrix from final version
@@ -148,11 +148,11 @@ public class Main {
 		for (double[] predictions : allPredictions) {
 			// Print predictions
 			// TODO - Remove from final
-			String out = "";
-			for (double dOut : predictions) {
-				out += dOut + "\t\t";
-			}
-			System.out.println(out);
+			//String out = "";
+			//for (double dOut : predictions) {
+			//	out += dOut + "\t\t";
+			//}
+			//System.out.println(out);
 			
 			allRecommendations.add(getTop10Recommendation(predictions));
 		}
@@ -162,19 +162,52 @@ public class Main {
 	private static int[] getTop10Recommendation(double[] predictions) {
 		int[] recommendations = new int[10];
 		
+		// Copy predictions
 		ArrayList<Double> tmpPredictions = new ArrayList<>();
+		ArrayList<Double> predictionsClone = new ArrayList<>();
 		for (int i = 0; i < predictions.length; i++) {
 			tmpPredictions.add(predictions[i]);
+			predictionsClone.add(predictions[i]);
 		}
 		
+		// Find top 10 elements (values can appear more then once)
+		double[] top10 = new double[10];
 		for (int i = 0; i < 10; i++) {
 			try {
-				recommendations[i] = tmpPredictions.indexOf(Collections.max(tmpPredictions));
-				tmpPredictions.remove(recommendations[i]);
-				recommendations[i] += i;
+				top10[i] = Collections.max(tmpPredictions);
+				tmpPredictions.remove(top10[i]);
 			}
 			catch (NoSuchElementException e) {
+				top10[i] = -1;
+				//tmpPredictions.remove(0);
+			}
+		}
+		
+		double lastMax = -1;
+		int cntSame = 0;
+		for (int i = 0; i < 10; i++) {
+			if (top10[i] == -1) {
 				recommendations[i] = -1;
+				continue;
+			}
+			
+			if (top10[i] != lastMax) {
+				recommendations[i] = predictionsClone.indexOf(top10[i]);
+				lastMax = top10[i];
+				cntSame = 0;
+			}
+			else {
+				cntSame++;
+				// Clone predictions
+				ArrayList<Double> tmpList = new ArrayList<>();
+				for (int j = 0; j < predictions.length; j++) {
+					tmpList.add(predictions[j]);
+				}
+				// Find current number's original index (not the 1st occurrence)
+				for (int j = 0; j < cntSame; j++) {
+					tmpList.remove(top10[i]);
+				}
+				recommendations[i] = tmpList.indexOf(top10[i]) + cntSame;
 			}
 		}
 		
@@ -240,7 +273,7 @@ public class Main {
 		return predictedRatings;
 	}
 	
-	// TODO fix this method
+	// TODO fix this method - I think I fixed it earlier
 	private static ArrayList<Integer> similarityOrder(ArrayList<User> neighborhood, double[] similarityRow) {
 		ArrayList<Integer> neighborIndexByDistance = new ArrayList<>();
 		int[] allIndexByDistance = new int[similarityRow.length];
