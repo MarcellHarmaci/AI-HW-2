@@ -179,23 +179,28 @@ public class Main {
 			}
 			catch (NoSuchElementException e) {
 				top10[i] = -1;
-				//tmpPredictions.remove(0);
+				if (!tmpPredictions.isEmpty())
+					tmpPredictions.remove(0);
 			}
 		}
 		
+		// Get recommendation indexes
 		double lastMax = -1;
 		int cntSame = 0;
 		for (int i = 0; i < 10; i++) {
+			// Not enough audioBooks
 			if (top10[i] == -1) {
 				recommendations[i] = -1;
 				continue;
 			}
 			
+			// Non-repeating estimated rating
 			if (top10[i] != lastMax) {
 				recommendations[i] = predictionsClone.indexOf(top10[i]);
 				lastMax = top10[i];
 				cntSame = 0;
 			}
+			// Repeating estimated rating
 			else {
 				cntSame++;
 				// Clone predictions
